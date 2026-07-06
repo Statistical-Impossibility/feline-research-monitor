@@ -1,7 +1,7 @@
 """Synchronous MCP client that calls our PubMed MCP server over stdio.
 
 This makes the agent system genuinely reach PubMed through MCP (client -> server),
-not just expose a server. The orchestrator uses it for retrieval, with a direct-fetch
+not just expose a server. run.py uses it for retrieval, with a direct-fetch
 fallback if the MCP round-trip fails.
 """
 

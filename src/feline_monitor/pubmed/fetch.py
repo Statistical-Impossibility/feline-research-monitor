@@ -109,7 +109,7 @@ def entrez_dates(pmids: list[str]) -> dict[str, str]:
     return out
 
 
-# --- helpers used by the orchestrator -------------------------------------
+# --- helpers used by run.py -----------------------------------------------
 
 def is_excluded_type(article_type: str) -> bool:
     """True if the JATS article-type is non-research (drop before screening)."""
