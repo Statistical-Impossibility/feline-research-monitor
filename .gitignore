@@ -1,0 +1,33 @@
+# Secrets — never commit
+.env
+*.env
+!.env.example
+
+# Working runtime config (machine-specific; config.example.yaml is the committed template)
+config.yaml
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# Agent runtime / data
+digests/
+logs/
+tmp/
+*.sqlite
+*.sqlite3
+*.db
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Models / large artifacts (NER pulls from HF at runtime)
+*.bin
+*.safetensors

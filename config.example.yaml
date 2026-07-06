@@ -1,0 +1,57 @@
+# Copy this file to config.yaml and edit. config.yaml is git-ignored (runtime/
+# machine-specific); this example is the committed reference. Every field is
+# defined in src/feline_monitor/config.py if you need the full picture.
+
+profile:
+  name: "FIP demo"                          # free-form; also scopes NER novelty history
+  must:                                     # a list of concept groups. Terms INSIDE one
+                                             # [bracket] are OR'd together; separate lines
+                                             # (groups) are AND'd with each other.
+    - ["feline infectious peritonitis", "FIP"]
+    # To require MORE concepts all be present, uncomment more lines below -- each new
+    # line ANDs another concept group onto the search. Example: this would search for
+    # (FIP-related terms) AND (vomiting) AND (ultrasound), all in the same paper:
+    # - ["vomiting", "emesis"]
+    # - ["ultrasound", "ultrasonography"]
+  mesh: ["Feline Infectious Peritonitis"]   # optional MeSH terms; OR'd into the FIRST group only
+
+sources:
+  pubmed:
+    max_per_run: 5           # per-run processing budget (newest first, or paginated backfill)
+    since: "2025-01-01"      # date floor; omit entirely for "latest N" with no backfill
+    full_text_char_cap: 50000  # max chars of article text sent to the model (~12k tokens).
+                                # Local small-context models: lower (e.g. 16000). APIs: can raise.
+
+model:
+  # Ordered fallback chain -- tried in order, falls through only on a transport error
+  # (crash/HTTP/timeout), never on a bad-but-returned answer. No model is ever hardcoded.
+  chain:
+    - { provider: "lmstudio",   model_id: "google/gemma-4-31b" }   # local, no API key needed
+    - { provider: "gemini",     model_id: "gemini-2.5-flash" }     # needs GEMINI_API_KEY
+    - { provider: "openrouter", model_id: "openrouter/free" }      # needs OPENROUTER_API_KEY
+    - { provider: "ollama",     model_id: "gpt-oss:20b" }          # local, no API key needed
+  request_delay_s: 2.0        # pause before each model call (rate-limit hygiene)
+  request_timeout_s: 60.0     # hard cap per call; a stall fails over to the next in chain
+  structured_screening: true  # true = ask the model for a strict JSON verdict (Gemini
+                               # supports this natively); false = free-text verdict parsed
+                               # with a tolerant fallback parser. Safe to leave true --
+                               # a model that doesn't support it just falls back automatically.
+
+ner:
+  enabled: false                # true turns on Feline-NER + the Treatment Radar agent.
+                                 # CPU-only torch is enough (no GPU/CUDA needed): measured
+                                 # less than 1GB for torch(cpu)+transformers+spaCy+its sentence model,
+                                 # plus a one-time ~430MB NER model download.
+                                 # A CUDA/GPU torch build instead can add ~2GB+ -- not needed here.
+  model_id: "Statistical-Impossibility/Feline-NER"   # 5 entities; user-approved id
+  # NER always sees exactly the same text the Screener/Summarizer already saw (capped by
+  # full_text_char_cap above) -- no separate/smaller cap here.
+  alert_categories: ["MEDICATION", "PROCEDURE"]       # store all 5, alert only on these
+  # These three fields are always present, whether enabled is true or false -- flip enabled
+  # without needing to comment/uncomment anything else.
+
+delivery:
+  telegram: true               # on by default; harmless if TELEGRAM_BOT_TOKEN/CHAT_ID aren't
+                                # set yet (send just fails quietly, logged). Set the .env
+                                # keys to activate.
+  markdown_dir: "./digests"
